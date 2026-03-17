@@ -8,17 +8,16 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up JDK 11
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '11'
           distribution: 'temurin'
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
 
       - name: Grant execute permission
         run: chmod +x gradlew
@@ -30,33 +29,40 @@ jobs:
         id: version
         run: |
           VERSION=$(grep 'versionName' app/build.gradle.kts | head -1 | grep -oP '"\K[^"]+')
+          CODE=$(grep 'versionCode' app/build.gradle.kts | head -1 | grep -oP '\d+')
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "CODE=$CODE" >> $GITHUB_OUTPUT
 
       - name: Upload APK to Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: app/build/outputs/apk/release/METV-${{ steps.version.outputs.VERSION }}.apk
+          name: "METV v${{ steps.version.outputs.VERSION }}"
+          body: "METV v${{ steps.version.outputs.VERSION }} yayınlandı."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update version.json
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
+          CODE="${{ steps.version.outputs.CODE }}"
           TAG="${{ github.ref_name }}"
           REPO="${{ github.repository }}"
           cat > version.json << EOF
           {
-            "versionCode": ${{ github.run_number }},
+            "versionCode": $CODE,
             "versionName": "$VERSION",
             "apkUrl": "https://github.com/$REPO/releases/download/$TAG/METV-$VERSION.apk",
-            "releaseNotes": "Yeni güncelleme"
+            "releaseNotes": "Yeni güncelleme mevcut"
           }
           EOF
 
-      - name: Commit version.json
+      - name: Commit & push version.json
         run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add version.json
-          git commit -m "Update version.json for ${{ github.ref_name }}" || echo "No changes"
+          git diff --staged --quiet || git commit -m "chore: update version.json to ${{ github.ref_name }}"
           git push origin HEAD:main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
