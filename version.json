@@ -1,6 +1,6 @@
 {
-  "versionCode": 1,
-  "versionName": "1.0",
+  "versionCode": 999,
+  "versionName": "9.9",
   "apkUrl": "https://github.com/mehmetey03/apk/releases/download/v1.0/METV-1.0.apk",
-  "releaseNotes": "İlk sürüm"
+  "releaseNotes": "Test güncellemesi"
 }
